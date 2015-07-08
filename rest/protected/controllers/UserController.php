@@ -11,7 +11,6 @@ class UserController
     public function login()
     {
         try {
-        	return array('teste');
 	        $username = trim($_POST['username']);
 	        if($username === '')
 	        	throw new AuthenticationException("Empty username not allowed");
