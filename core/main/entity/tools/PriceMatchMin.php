@@ -111,55 +111,29 @@ class PriceMatchMin extends BaseEntityAbstract
 		$result = self::getAllByCriteria('sku = ?', array(trim($sku)), $activeOnly, 1, 1, array('id'=> 'desc'));
 		return count($result) > 0 ? ($result[0]->sku === '' ? '' : $result[0]) : '';
 	}
-	public function getMin(array $searchCriteria)
+	public function getMin()
 	{
-		if(!isset($searchCriteria) || count($searchCriteria = json_decode(json_encode($searchCriteria), true)) === 0)
-			throw new Exception('System Error: params not provided!');
+		$sku = trim($this->getSku());
+		$product = Product::getBySku($sku);
 		
-		$noSearch = true;
-		$where = array(1);
-		$params = array();
-		
-		$where[] =  "minId = ? ";
-		$params[] = intval($this->getId());
-		
-		foreach($searchCriteria as $field => $value)
+		if($product instanceof Product)
 		{
-			if((is_array($value) && count($value) === 0) || (is_string($value) && ($value = trim($value)) === '') || $value === null)
-				continue;
-
-			switch ($field)
-			{
-				case 'price_from':
-				{
-					$where[] =  "price >= ? ";
-					$params[] = doubleval($value);
-					break;
-				}
-				case 'price_to':
-				{
-					$where[] =  "price <= ? ";
-					$params[] = doubleval($value);
-					break;
-				}
-				case 'componieIds':
-				{
-					$where[] = 'companyId IN ('.implode(", ", array_fill(0, count($value), "?")).')';
-					$params = array_merge($params, $value);
-					break;
-				}
-			}
-			$noSearch = false;
+			$where = array(1);
+			$params = array();
+			
+			$where[] = "minId = ? ";
+			$params[] = $this->getId();
+			
+			$companies = PriceMatchCompany::getAll();
+			$companyIds = array_map(create_function('$a', 'return $a->getId();'), $companies);
+			$where[] = 'companyId IN ('.implode(", ", array_fill(0, count($companyIds), "?")).')';
+			$params = array_merge($params, $companyIds);
+			
+			//calculate real price range
+			$records = PriceMatchRecord::getAllByCriteria(implode(' AND ', $where), $params, true, 1, 1, array('price'=>'asc'));
+			if(count($records) > 0)
+				$this->setRecord($records[0])->setActive(true)->save();
 		}
-		if($noSearch === true)
-			throw new Exception("invalid paramiters");
-		$records = PriceMatchRecord::getAllByCriteria(implode(' AND ', $where), $params, true, 1, 1, array('price' => 'asc'), $stats);
-		
-		if(count($records) > 0)
-			$this->setRecord($records[0]);
-		else $this->setRecord(null)->setActive(false);
-		$this->save();
-		
-		return $this;
+		return $this->getRecord();
 	}
 }

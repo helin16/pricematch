@@ -23,7 +23,9 @@ abstract class SystemCoreAbstract
 			$base . '/db/',
 			$base . '/entity/',
 			$base . '/entity/system/',
-			$base . '/entity/tools/'
+			$base . '/entity/tools/',
+			$base . '/exception/',
+			$base . '/utils/'
 		);
 		foreach ($autoloadPaths as $path)
 		{
@@ -37,5 +39,8 @@ abstract class SystemCoreAbstract
 	}
 }
 spl_autoload_register(array('SystemCoreAbstract','autoload'));
+
+//REST server
+require_once dirname(__FILE__) . '/../3rdParty/RestServer/source/Jacwright/RestServer/RestServer.php';
 
 ?>
